@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-posthjelp: Skolesammenslåing Tiller</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #ffffff;
+            width: 20px; 
+            height: 20px; 
+            animation: spin 1s linear infinite;
+            display: none;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 100; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.5);
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            margin: 10% auto; 
+            padding: 24px;
+            border: none;
+            width: 90%; 
+            max-width: 500px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1), 0 5px 10px rgba(0,0,0,0.05);
+            transform: translateY(-20px);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .modal.active .modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .modal-close-button {
+            color: #9ca3af;
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 24px;
+            font-weight: bold;
+            transition: color 0.2s ease;
+        }
+        .modal-close-button:hover,
+        .modal-close-button:focus {
+            color: #374151;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        #politikerListe li {
+            padding: 10px 8px;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background-color 0.2s ease;
+        }
+        #politikerListe li:hover {
+            background-color: #f9fafb;
+        }
+        #politikerListe li:last-child {
+            border-bottom: none;
+        }
+        .clickable-link {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+            word-break: break-all;
+        }
+        .clickable-link:hover {
+            color: #3730a3;
+            text-decoration: underline;
+        }
+        input:focus, textarea:focus {
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4);
+        }
+        #partiCheckboxContainer label {
+            display: flex;
+            align-items: center;
+            padding: 6px 0;
+            cursor: pointer;
+        }
+        #partiCheckboxContainer input[type="checkbox"] {
+            margin-right: 8px;
+            accent-color: #4f46e5; /* Indigo color for checkbox */
+        }
+        .info-box {
+            background-color: #eef2ff; /* indigo-50 */
+            border-left: 4px solid #4f46e5; /* indigo-600 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 0.75rem; /* mt-3 */
+        }
+        #stickyWarningToast {
+            transition: opacity 0.5s ease-in-out, transform 0.3s ease-in-out;
+            transform: translateY(-100%); 
+            opacity: 0;
+        }
+        #stickyWarningToast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .toast-close-button {
+            color: #c2410c; 
+            font-size: 20px;
+            line-height: 1;
+            transition: color 0.2s ease;
+        }
+        .toast-close-button:hover {
+            color: #9a3412; 
+        }
+        details > summary {
+            list-style: none; 
+            cursor: pointer;
+        }
+        details > summary::-webkit-details-marker { 
+            display: none;
+        }
+        details summary .arrow-icon {
+            transition: transform 0.2s ease-in-out;
+        }
+        details[open] summary .arrow-icon {
+            transform: rotate(90deg);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-700 p-4 md:p-8 min-h-screen flex flex-col items-center antialiased">
+
+    <div id="stickyWarningToast" class="fixed top-4 right-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md shadow-lg hidden w-full max-w-sm sm:max-w-md z-50" role="alert">
+        <div class="flex items-start">
+            <div class="flex-grow">
+                <p class="font-bold">Viktig påminnelse!</p>
+                <p class="text-sm">Husk å alltid lese nøye gjennom og tilpasse den genererte e-postteksten før du sender den. Denne løsningen sender ingen e-poster for deg; du må sende den via din egen e-postklient.</p>
+            </div>
+            <button type="button" class="ml-2 toast-close-button" aria-label="Lukk varsel" onclick="document.getElementById('stickyWarningToast').classList.remove('show'); setTimeout(() => document.getElementById('stickyWarningToast').classList.add('hidden'), 300);">
+                &times;
+            </button>
+        </div>
+    </div>
+
+    <div class="w-full max-w-2xl bg-white p-6 md:p-10 rounded-2xl shadow-xl mt-4 sm:mt-8">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-indigo-600">Aksjon for barnas beste.</h1>
+            <p class="text-slate-500 mt-3 text-base">Si nei til for tidlig skolesammenslåing.</p>
+            <div class="info-box text-left mt-4">
+                <p class="text-slate-700 text-sm leading-relaxed">
+                    Denne siden hjelper deg å skrive en e-post til politikere i Trondheim kommune. Du får forslag til argumenter mot den raske sammenslåingen av skolene på Tiller. Legg gjerne til din egen historie for å gjøre e-posten mer personlig.
+                </p>
+                <p class="text-slate-700 text-sm leading-relaxed mt-1">
+                    <strong>Viktig:</strong> Dette verktøyet lager et utkast for deg. Du må selv lese gjennom, redigere, og sende e-posten fra din egen konto.
+                </p>
+            </div>
+            <details class="mt-3 text-left">
+                <summary class="text-sm font-medium text-indigo-600 hover:text-indigo-800 flex items-center justify-between p-2 rounded-md hover:bg-indigo-50">
+                    <span>Informasjon om bruk av data</span>
+                    <span class="arrow-icon transform transition-transform duration-200 ease-in-out">&#9654;</span> 
+                </summary>
+                <div class="info-box mt-1 p-3 text-sm">
+                    Informasjonen du skriver inn (navn, adresse, personlig årsak) sendes til Google for å generere e-postteksten ved hjelp av Gemini AI-modellen. Ved å bruke denne tjenesten godtar du dette. Les <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" class="underline hover:text-indigo-700">Googles personvernregler</a> for mer informasjon.
+                </div>
+            </details>
+        </header>
+
+        <div class="space-y-6 mb-8">
+            <div>
+                <label for="navn" class="block text-sm font-medium text-slate-700 mb-1.5">Fullt navn (valgfritt):</label>
+                <input type="text" id="navn" name="navn" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-150" placeholder="Ditt fulle navn (valgfritt)">
+                <p class="text-xs text-slate-500 mt-1">Brukes til å signere e-posten. Hvis tomt, signeres e-posten mer generelt.</p>
+            </div>
+
+            <div>
+                <label for="adresse" class="block text-sm font-medium text-slate-700 mb-1.5">Adresse (valgfritt, f.eks. Krokveien 1, Tiller):</label>
+                <input type="text" id="adresse" name="adresse" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-150" placeholder="Din gateadresse og poststed (valgfritt)">
+                <p class="text-xs text-slate-500 mt-1">Brukes i signaturen for å understreke din tilknytning til kommunen. Hvis tomt, utelates adressen.</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">Velg politiske partier du ønsker å sende e-post til:</label>
+                <p class="text-xs text-slate-500 mb-2">Det kan være en fordel å velge partier du har støttet tidligere eller vurderer å støtte. Listen med politikere og "Åpne i din e-postklient"-knappen vil baseres på dine valg her.</p>
+                <div class="p-3 border border-gray-300 rounded-lg shadow-sm bg-white">
+                    <label for="selectAllParties" class="text-sm text-slate-700 hover:bg-slate-100 p-1 rounded font-medium mb-2 border-b border-gray-200 pb-2 flex items-center">
+                        <input type="checkbox" id="selectAllParties" name="selectAllParties" class="mr-2">
+                        Velg alle partier (hele bystyret)
+                    </label>
+                    <div id="partiCheckboxContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 mt-2">
+                        </div>
+                </div>
+            </div>
+
+            <div>
+                <label for="personligAarsak" class="block text-sm font-medium text-slate-700 mb-1.5">Din personlige historie/årsak (valgfritt):</label>
+                <textarea id="personligAarsak" name="personligAarsak" rows="5" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-150" placeholder="Din personlige historie/årsak (valgfritt, men gjør e-posten mer personlig)"></textarea>
+                 <p class="text-xs text-slate-500 mt-1">Denne teksten brukes av KI-en til å skreddersy e-postforslaget dersom du fyller den ut.</p>
+            </div>
+        </div>
+
+        <div class="mb-8">
+             <button id="hovedKnapp" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-lg flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                Generer e-postforslag
+                <div id="aiLoaderHoved" class="loader"></div>
+            </button>
+            <p id="aiStatus" class="text-sm text-slate-500 mt-2.5 text-center"></p>
+        </div>
+        
+        <div id="epostForhaandsvisningSeksjon" class="hidden mt-8 space-y-6">
+            <div>
+                <h2 class="text-xl font-semibold text-indigo-600 mb-3">Forhåndsvisning av e-post:</h2>
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-inner">
+                    <p class="whitespace-pre-wrap text-sm leading-relaxed" id="epostTekst"></p>
+                </div>
+            </div>
+
+             <div class="mt-4">
+                <button id="genererNyttUtkastKnapp" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center">
+                    Generer nytt utkast 
+                    <div id="aiLoaderNyttUtkast" class="loader"></div>
+                </button>
+            </div>
+
+            <div class="mt-5 flex flex-col sm:flex-row gap-3">
+                <button id="kopierEpost" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-150 ease-in-out flex-1 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
+                    Kopier e-posttekst
+                </button>
+                <a id="sendEpostLink" href="#" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-150 ease-in-out flex-1 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+                    Åpne teksten i din e-postklient
+                </a>
+            </div>
+            <p class="text-xs text-slate-500 mt-2 text-center leading-normal">
+                <strong>Viktig:</strong> "Åpne teksten i din e-postklient"-knappen forsøker å åpne din standard e-postklient med adresser til valgte partier i BCC-feltet.
+                Om dette ikke fungerer optimalt (f.eks. ved mange mottakere), bruk "Kopier e-posttekst"-knappen. Lim så inn teksten og e-postadressene manuelt.
+                Når du klikker på en e-postadresse i listen under, åpnes en ny e-post til kun den mottakeren.
+            </p>
+            
+            <div id="politikerListeContainer" class="hidden mt-6 pt-6 border-t border-slate-200">
+                <h3 id="politikerListeOverskrift" class="text-lg font-semibold text-slate-700 mb-3"></h3>
+                <ul id="politikerListe" class="list-none pl-0 text-sm text-slate-600 bg-white rounded-lg shadow-sm border border-gray-200 divide-y divide-gray-100">
+                    </ul>
+                 <p id="politikerListeTomMelding" class="text-slate-500 p-3 text-center hidden">Velg ett eller flere partier over for å vise politikere.</p>
+            </div>
+
+            <div class="mt-6 pt-6 border-t border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-700 mb-2">Finn alle politikere i Trondheim Bystyre:</h3>
+                <p class="text-sm text-slate-600">
+                    Fullstendig kontaktinformasjon for bystyrets medlemmer finner du på Trondheim kommunes innsynsportal:
+                    <a href="https://trondheim.innsynsportal.no/sru?commission_id=5002" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-700 hover:underline font-medium">
+                        Innsynsportal - Trondheim Bystyre
+                    </a>.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div id="messageModal" class="modal">
+        <div class="modal-content relative"> <button class="modal-close-button" onclick="closeModal()" aria-label="Lukk">&times;</button>
+            <p id="modalMessageText" class="text-slate-700 text-base mb-5"></p>
+            <button onclick="closeModal()" class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">OK</button>
+        </div>
+    </div>
+    
+
+    <footer class="mt-10 mb-6 text-center text-xs text-slate-500">
+        <p>Denne applikasjonen er utviklet ved hjelp av kunstig intelligens (Google Gemini). Den genererte e-posten er ment som et utgangspunkt. Husk å alltid gjennomgå og tilpasse teksten før du sender.</p>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const navnInput = document.getElementById('navn');
+        const adresseInput = document.getElementById('adresse');
+        const partiCheckboxContainer = document.getElementById('partiCheckboxContainer');
+        const selectAllPartiesCheckbox = document.getElementById('selectAllParties');
+        const personligAarsakTextarea = document.getElementById('personligAarsak');
+        const hovedKnapp = document.getElementById('hovedKnapp');
+        const genererNyttUtkastKnapp = document.getElementById('genererNyttUtkastKnapp');
+        const epostForhaandsvisningSeksjon = document.getElementById('epostForhaandsvisningSeksjon');
+        const epostTekstDisplay = document.getElementById('epostTekst');
+        const kopierEpostButton = document.getElementById('kopierEpost');
+        const sendEpostLink = document.getElementById('sendEpostLink');
+        const aiLoaderHoved = document.getElementById('aiLoaderHoved'); 
+        const aiLoaderNyttUtkast = document.getElementById('aiLoaderNyttUtkast'); 
+        const aiStatus = document.getElementById('aiStatus');
+        const messageModal = document.getElementById('messageModal');
+        const modalMessageText = document.getElementById('modalMessageText');
+        const politikerListeContainer = document.getElementById('politikerListeContainer');
+        const politikerListeOverskrift = document.getElementById('politikerListeOverskrift');
+        const politikerListe = document.getElementById('politikerListe');
+        const politikerListeTomMelding = document.getElementById('politikerListeTomMelding');
+        const stickyWarningToast = document.getElementById('stickyWarningToast');
+
+
+        function showModal(message) {
+            modalMessageText.textContent = message;
+            messageModal.style.display = "block";
+            setTimeout(() => {
+                messageModal.classList.add('active');
+            }, 10); 
+        }
+
+        function closeModal() {
+            messageModal.classList.remove('active');
+            setTimeout(() => {
+                messageModal.style.display = "none";
+            }, 300);
+        }
+
+        window.onclick = function(event) {
+            if (event.target == messageModal) {
+                closeModal();
+            }
+        }
+        
+        const politikerData = [
+            // Høyre
+            { navn: "Kent Ranum", funksjon: "Ordfører", representerer: "Høyre", forkortelse: "H", telefon: "93439000", epost: "ordforer.postmottak@trondheim.kommune.no" },
+            { navn: "Christianne Bauck-Larssen", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "91877815", epost: "sosialetjenester.byrad@trondheim.kommune.no" },
+            { navn: "Berit Tiller", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "91722717", epost: "berit.tiller@trondheim.kommune.no" },
+            { navn: "Niklaus Haugrønning", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "91760901", epost: "niklaus@haugronning.no" },
+            { navn: "Ferhat Güven", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "97178952", epost: "ferhat.guven@trondheim.kommune.no" },
+            { navn: "Olav Noteng", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "93200039", epost: "notengolav@gmail.com" },
+            { navn: "Tone Dorthe Sletten", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "90926181", epost: "tone.dorthe.sletten@gmail.com" },
+            { navn: "Ove Vollan", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "97511790", epost: "ove.vollan@smn.no" },
+            { navn: "Nina Westad", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "93480661", epost: "nina.westad@gmail.com" },
+            { navn: "Radino Dizza Zulfi Mahendra", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "40349479", epost: "radino.mahendra@outlook.com" },
+            { navn: "Kjetil Utne", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "92087948", epost: "kjetiltrondheim@gmail.com" },
+            { navn: "Haakon Gussiaas", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "92813309", epost: "haakon.gussiaas@gmail.com" },
+            { navn: "Therese Bjørstad Karlsen", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "99599755", epost: "therese.karlsen@gmail.com" },
+            { navn: "Gro Eide", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "90029009", epost: "gro@growgrow.no" },
+            { navn: "Karl Erik Haug", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "92025150", epost: "karl.e.haug@ntnu.no" },
+            { navn: "Michael Momyr", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "90695300", epost: "michael@momyr.no" },
+            { navn: "Sindre Nilsskog", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "90783391", epost: "sindre.nilsskog@trondheim.kommune.no" },
+            { navn: "Jørn Erik Berg", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "90622627", epost: "jorn.erik.berg@mataki.com" },
+            { navn: "Robert Flataas", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "47672190", epost: "robert.flataas@gmail.com" },
+            { navn: "Jacob Brox", funksjon: "Medlem", representerer: "Høyre", forkortelse: "H", telefon: "97845085", epost: "jacob.brox@gmail.com" },
+            { navn: "Sebastian Johansen", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "45286718", epost: "sebastian_johansen@hotmail.com" },
+            { navn: "Mats Ulseth Ramo", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "93070637", epost: "mats.ulseth.ramo@trondheim.kommune.no" },
+            { navn: "Knut Efskin", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "91661501", epost: "knut.efskin@norion.no" },
+            { navn: "Lise Remen Horneman Wist", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "45020032", epost: "Lise.remen@gmail.com" },
+            { navn: "Geir Arne Aune Hovd", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "99771205", epost: "gaah@hovd.com" },
+            { navn: "Daniel Whittle Stensland", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "48124100", epost: "daniel.whittlestens@gmail.com" },
+            { navn: "Frode Halvorsen", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "91845969", epost: "halvorsn@gmail.com" },
+            { navn: "Anna Konstanse Holan Almli", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "95520715", epost: "annakonstansealmli@gmail.com" },
+            { navn: "Terje Ekle", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "91390957", epost: "terj-ekl@online.no" },
+            { navn: "Ida Margrethe Nordtvedt Hafstad", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "40041861", epost: "ida.margrethe.no.ha@gmail.com" },
+            { navn: "Børre Lien", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "93085111", epost: "borreli@me.com" },
+            { navn: "Jan Erik Engan", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "95785920", epost: "jan.erik@engan.org" },
+            { navn: "Siri Holm Lønseth", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "41906999", epost: "siri.holm.lonseth@trondheim.kommune.no" },
+            { navn: "Torkel Ranum", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "90146667", epost: "toranum@online.no" },
+            { navn: "Gina Merete Næss", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "41449499", epost: "gikva@online.no" },
+            { navn: "Berit Nordseth", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "95042666", epost: "ber.nordseth@gmail.com" },
+            { navn: "Toril Walsø Strand", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "48119344", epost: "torilwstrand@gmail.com" },
+            { navn: "Gerd Helene Wold", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "41215518", epost: "gerdwold3@gmail.com" },
+            { navn: "Lise Kaspersen", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "92810749", epost: "kaspersenlise@gmail.com" },
+            { navn: "Lindy Jarosch-Von Schweder", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "95906018", epost: "lindyvon@gmail.com" },
+            { navn: "Trude Sjøhagen Nordgaard", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "95263070", epost: "trudesn1974@gmail.com" },
+            { navn: "Krzysztof Orleanski", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "41454451", epost: "krzysztof.orleanski@gmail.com" },
+            { navn: "Joachim Gustav Thure Lindgren", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "93805619", epost: "joachim@samsys.no" },
+            { navn: "Inger Johanne Dehli", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "40401198", epost: "dehli@dehliadvokat.no" },
+            { navn: "Christian Wiig", funksjon: "Varamedlem", representerer: "Høyre", forkortelse: "H", telefon: "91760241", epost: "cw@christianwiig.no" },
+            // Arbeiderpartiet
+            { navn: "Emil Raaen", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "91530366", epost: "emil.raaen@trondheim.kommune.no" },
+            { navn: "Trude Basso", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "95241982", epost: "trudebasso@gmail.com" },
+            { navn: "Sara Shafighi", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "90743374", epost: "sara.shafighi@trondheim.kommune.no" },
+            { navn: "Kirsti Tømmervold", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "91534664", epost: "kirsti.tommervold@trondheim.kommune.no" },
+            { navn: "Roar Aas", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "99455560", epost: "roar.aas@trondheim.kommune.no" },
+            { navn: "Sissel Trønsdal", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "92888935", epost: "sisseltronsdal@gmail.com" },
+            { navn: "Anita Børstad", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "97708962", epost: "Anita.borstad@hotmail.com" },
+            { navn: "Håkon Einarsve", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "41399941", epost: "hakon.einarsve@gmail.com" },
+            { navn: "Jørn Arve Flått", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "93458914", epost: "jorn.arve.flatt@trondheim.kommune.no" },
+            { navn: "Sigurd Jan Ingvaldsen", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "91329203", epost: "sigingva@online.no" },
+            { navn: "Leon Bafondoko", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "94037698", epost: "bafondoko@hotmail.com" },
+            { navn: "Erling Eide Hustvedt", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "97749654", epost: "erlingeidehustvedt@gmail.com" },
+            { navn: "Ismail Elmi", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "97996318", epost: "ismail-salad.elmi@trondheim.kommune.no" },
+            { navn: "Edvin Helland", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "91307710", epost: "edvin helland@hotmail.com" },
+            { navn: "Karim Tahir", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "92512383", epost: "Karim-tahir@hotmail.com" },
+            { navn: "Gjermund Gorset", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "97586893", epost: "gjermundgorset@gmail.com" },
+            { navn: "Maria Eriksen Storrø", funksjon: "Medlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "47351171", epost: "mariastorro@gmail.com" },
+            { navn: "Live Naomi Lubanda-Husby", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "41229836", epost: "live.husby@outlook.com" },
+            { navn: "Kristin Tinmannsvik", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "95263940", epost: "kristin.tinmannsvik@trondheim.kommune.no" },
+            { navn: "Hege Anette Rovik", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "91522106", epost: "hegerovik@live.no" },
+            { navn: "Kristian Lian", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "40230676", epost: "Kristian.lian@yahoo.com" },
+            { navn: "Peder Winsnes", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "98894650", epost: "peder.winsnes@gmail.com" },
+            { navn: "Metin Bardakci", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "91149307", epost: "barmetin@gmail.com" },
+            { navn: "Magnus Aastrøm", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "90213640", epost: "magaastr@gmail.com" },
+            { navn: "Heidi Leistad", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "93022220", epost: "heidi.leistad@gmail.com" },
+            { navn: "Anne Sophie Hunstad", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "95263009", epost: "sofushunstad@gmail.com" },
+            { navn: "Terje Jentoft Roel", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "47300737", epost: "terje.roel@gmail.com" },
+            { navn: "Svein-Arild Gullvåg", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "97739266", epost: "svein@gullvaag.net" },
+            { navn: "Dina Marie Hofsli Flått", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "94886204", epost: "dinamhf@gmail.com" },
+            { navn: "Marita Tveit Hansen", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "46920282", epost: "marita.tveit.hansen@gmail.com" },
+            { navn: "Randi Ellen Spets", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "92400945", epost: "spetsrandi@gmail.com" },
+            { navn: "Irene Renate Aunaas", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "92472810", epost: "iaunaas@gmail.com" },
+            { navn: "Astrid Grendstad", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "94842415", epost: "grendstadastrid@gmail.com" },
+            { navn: "Mats Monsen", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "45391441", epost: "mats.m92@gmail.com" },
+            { navn: "Mads Hoff", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "46767948", epost: "mads.hoff2@gmail.com" },
+            { navn: "Valborg Sund", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "90073980", epost: "vel-sun@online.no" },
+            { navn: "Per-Arild Lyng", funksjon: "Varamedlem", representerer: "Arbeiderpartiet", forkortelse: "Ap", telefon: "92034086", epost: "peralyng58@gmail.com" },
+            // Sosialistisk Venstreparti
+            { navn: "Mona Berger", funksjon: "Medlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "92861897", epost: "mona.berger@trondheim.kommune.no" },
+            { navn: "Efia Marie Damba", funksjon: "Medlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "48061531", epost: "efia.marie.damba@trondheim.kommune.no" },
+            { navn: "Silje Naper Salomonsen", funksjon: "Medlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "95864191", epost: "silje.salomonsen@trondheim.kommune.no" },
+            { navn: "Ottar Michelsen", funksjon: "Medlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "91555983", epost: "ottar.michelsen@ntnu.no" },
+            { navn: "Jenny Nordaune", funksjon: "Medlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "95179296", epost: "jnordaune@hotmail.com" },
+            { navn: "Latifa Nasser", funksjon: "Medlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "40417265", epost: "latifa.nasser@skaun.kommune.no" },
+            { navn: "Nils Heldal", funksjon: "Medlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "90666585", epost: "nils.heldal@gmail.com" },
+            { navn: "Annbjørg Horgar", funksjon: "Medlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "92611576", epost: "a.horgar@gmail.com" },
+            { navn: "Even Næss Bergseng", funksjon: "Medlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "97113609", epost: "even.n.bergseng@gmail.com" },
+            { navn: "Bisma Aleem", funksjon: "Varamedlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "46596015", epost: "Bismaaleem9@gmail.com" },
+            { navn: "Silje Furuhaug Sandum", funksjon: "Varamedlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "98025332", epost: "bliros@yahoo.no" },
+            { navn: "Henriette Winnberg", funksjon: "Varamedlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "93439151", epost: "henriette.winnberg@trondheim.kommune.no" },
+            { navn: "Anny Marethe Vollan", funksjon: "Varamedlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "94069246", epost: "anny.vollan@statped.no" },
+            { navn: "Isabella Baptista Jørgensen", funksjon: "Varamedlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "45372757", epost: "bellajrgensen@yahoo.com" },
+            { navn: "Eirin Holm Rise", funksjon: "Varamedlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "93657017", epost: "eirinhrise@gmail.com" },
+            { navn: "Guri Greger Nordland Hagen", funksjon: "Varamedlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "93238572", epost: "gurigregernhagen@gmail.com" },
+            { navn: "Åshild Tungen", funksjon: "Varamedlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "93822280", epost: "ashild.tungen@gmail.com" },
+            { navn: "Iben Jonathan Moum", funksjon: "Varamedlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "99446208", epost: "ibenjonathan@gmail.com" },
+            { navn: "Nisrin El Morabit", funksjon: "Varamedlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "47954014", epost: "nisrin.elmorabit@gmail.com" },
+            { navn: "Toril Indergård", funksjon: "Varamedlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "92491097", epost: "toril.indergaard@gmail.com" },
+            { navn: "Elin Wullum", funksjon: "Varamedlem", representerer: "Sosialistisk Venstreparti", forkortelse: "SV", telefon: "", epost: "Elin.wullum@gmail.com" },
+            // Fremskrittspartiet
+            { navn: "Elin Marie Andreassen", funksjon: "Medlem", representerer: "Fremskrittspartiet", forkortelse: "Frp", telefon: "91830111", epost: "elin-marie.andreassen@trondheim.kommune.no" },
+            { navn: "Maria Alseth", funksjon: "Medlem", representerer: "Fremskrittspartiet", forkortelse: "Frp", telefon: "92656879", epost: "maria.alseth@trondheim.kommune.no" },
+            { navn: "Jostein Eirik Gjermstad", funksjon: "Medlem", representerer: "Fremskrittspartiet", forkortelse: "Frp", telefon: "98224850", epost: "j.e.gjermstad@gmail.com" },
+            { navn: "Jomar Andre Aftret", funksjon: "Medlem", representerer: "Fremskrittspartiet", forkortelse: "Frp", telefon: "90672396", epost: "jomar.aftret@getmail.no" },
+            { navn: "Arild Belsås Svendsli", funksjon: "Varamedlem", representerer: "Fremskrittspartiet", forkortelse: "Frp", telefon: "47961348", epost: "arild.svendsli@fpu.no" },
+            { navn: "Reidar Albertsen", funksjon: "Varamedlem", representerer: "Fremskrittspartiet", forkortelse: "Frp", telefon: "92267177", epost: "reidaralbertsen@gmail.com" },
+            { navn: "Mona Røsnes", funksjon: "Varamedlem", representerer: "Fremskrittspartiet", forkortelse: "Frp", telefon: "97676703", epost: "Mo69trheim@hotmail.com" },
+            { navn: "Viole Stene Grøtte", funksjon: "Varamedlem", representerer: "Fremskrittspartiet", forkortelse: "Frp", telefon: "97005166", epost: "violestene@gmail.com" },
+            { navn: "Fredrik Garvik Steimler", funksjon: "Varamedlem", representerer: "Fremskrittspartiet", forkortelse: "Frp", telefon: "48133655", epost: "fredrik.steimler@fpu.no" },
+            { navn: "Helge Opland", funksjon: "Varamedlem", representerer: "Fremskrittspartiet", forkortelse: "Frp", telefon: "90081141", epost: "h-opland@online.no" },
+            { navn: "Sigmund Ofstad", funksjon: "Varamedlem", representerer: "Fremskrittspartiet", forkortelse: "Frp", telefon: "95042509", epost: "s ofstad@hotmail.com" },
+            // Venstre
+            { navn: "Erling Moe", funksjon: "Varaordfører", representerer: "Venstre", forkortelse: "V", telefon: "91544404", epost: "erling.moe@trondheim.kommune.no" },
+            { navn: "Trond Grønli Åm", funksjon: "Medlem", representerer: "Venstre", forkortelse: "V", telefon: "94878308", epost: "kultur-idrett-friluftsliv.byrad@trondheim.kommune.no" },
+            { navn: "Guro Holm Skillingstad", funksjon: "Medlem", representerer: "Venstre", forkortelse: "V", telefon: "46851785", epost: "guro.skil@hotmail.no" },
+            { navn: "Elisiv Hårstad Skjei", funksjon: "Medlem", representerer: "Venstre", forkortelse: "V", telefon: "92838980", epost: "elisiv.harstad.skjei@trondheim.kommune.no" },
+            { navn: "Magnus Gilje", funksjon: "Varamedlem", representerer: "Venstre", forkortelse: "V", telefon: "46309984", epost: "magnus.gilje@icloud.com" },
+            { navn: "Hanne Moe Reitan", funksjon: "Varamedlem", representerer: "Venstre", forkortelse: "V", telefon: "40872380", epost: "hannereitan@hotmail.no" },
+            { navn: "Marthe Strickert", funksjon: "Varamedlem", representerer: "Venstre", forkortelse: "V", telefon: "95849988", epost: "marthe.strickert@venstre.no" },
+            { navn: "Ståle Gjersvold", funksjon: "Varamedlem", representerer: "Venstre", forkortelse: "V", telefon: "91613457", epost: "staalegjersvold@gmail.com" },
+            { navn: "Marie Jacobsen Lauvås", funksjon: "Varamedlem", representerer: "Venstre", forkortelse: "V", telefon: "92409439", epost: "mariejlauvas@gmail.com" },
+            { navn: "Vera Berntine Wigum", funksjon: "Varamedlem", representerer: "Venstre", forkortelse: "V", telefon: "98889608", epost: "vera.wigum@gmail.com" },
+            { navn: "Eric Christian Monsen", funksjon: "Varamedlem", representerer: "Venstre", forkortelse: "V", telefon: "46771644", epost: "eric.monsen@gmail.com" },
+            { navn: "Ask Ibsen Lindal", funksjon: "Varamedlem", representerer: "Venstre", forkortelse: "V", telefon: "98448526", epost: "ask.lindal@gmail.com" },
+            { navn: "Vebjørn Andreas Forthun Arff", funksjon: "Varamedlem", representerer: "Venstre", forkortelse: "V", telefon: "93450059", epost: "vebsarff@gmail.com" },
+            // Miljøpartiet De Grønne
+            { navn: "Line Fjørstad", funksjon: "Medlem", representerer: "Miljøpartiet de Grønne", forkortelse: "MDG", telefon: "99129821", epost: "miljo-naering-samferdsel.byrad@trondheim.kommune.no" },
+            { navn: "Aurora Meland Winger", funksjon: "Medlem", representerer: "Miljøpartiet de Grønne", forkortelse: "MDG", telefon: "93056292", epost: "aurora.meland.winger@trondheim.kommune.no" },
+            { navn: "Tore Dyrendahl Lund", funksjon: "Medlem", representerer: "Miljøpartiet de Grønne", forkortelse: "MDG", telefon: "97009886", epost: "tore.dyrendahl@trondheim.kommune.no" },
+            { navn: "Nora Malini Sætherø", funksjon: "Medlem", representerer: "Miljøpartiet de Grønne", forkortelse: "MDG", telefon: "99448040", epost: "nora.malini.sathero@trondheim.kommune.no" },
+            { navn: "Thomas Sakshaug", funksjon: "Varamedlem", representerer: "Miljøpartiet de Grønne", forkortelse: "MDG", telefon: "45244875", epost: "thosaks@gmail.com" },
+            { navn: "Ola Renolen", funksjon: "Varamedlem", representerer: "Miljøpartiet de Grønne", forkortelse: "MDG", telefon: "99238991", epost: "ola.renolen@gmail.com" },
+            { navn: "Jonas Ali Børø", funksjon: "Varamedlem", representerer: "Miljøpartiet de Grønne", forkortelse: "MDG", telefon: "48210298", epost: "jonasali@gmail.com" },
+            { navn: "Ingunn Moen", funksjon: "Varamedlem", representerer: "Miljøpartiet de Grønne", forkortelse: "MDG", telefon: "41358159", epost: "ingunn.mdg@gmail.com" },
+            { navn: "Nora Werket Ghanizadeh", funksjon: "Varamedlem", representerer: "Miljøpartiet de Grønne", forkortelse: "MDG", telefon: "", epost: "" }, 
+            { navn: "Stine Szell", funksjon: "Varamedlem", representerer: "Miljøpartiet de Grønne", forkortelse: "MDG", telefon: "93497800", epost: "stine.boro.szell@mdg.no" },
+            { navn: "Elise Eikrem Rindarøy", funksjon: "Varamedlem", representerer: "Miljøpartiet de Grønne", forkortelse: "MDG", telefon: "93877093", epost: "elise.eikrem.rindaroy@gmail.com" },
+            { navn: "Ivar Henry Larsen", funksjon: "Varamedlem", representerer: "Miljøpartiet de Grønne", forkortelse: "MDG", telefon: "90593521", epost: "i.henlar@gmail.com" },
+            { navn: "Norunn Krokeide", funksjon: "Varamedlem", representerer: "Miljøpartiet de Grønne", forkortelse: "MDG", telefon: "46639495", epost: "norunn.krokeide@trondheim.kommune.no" },
+            { navn: "Kine Nilsen Myre", funksjon: "Varamedlem", representerer: "Miljøpartiet de Grønne", forkortelse: "MDG", telefon: "95839494", epost: "kinenmyre@gmail.com" },
+            { navn: "Astrid Rem", funksjon: "Varamedlem", representerer: "Miljøpartiet de Grønne", forkortelse: "MDG", telefon: "98099582", epost: "astrid.rem@mdg.no" },
+            // Senterpartiet
+            { navn: "Haldor Buan Grendstad", funksjon: "Varamedlem", representerer: "Senterpartiet", forkortelse: "Sp", telefon: "41609070", epost: "haldorbonde@gmail.com" },
+            // Kristelig Folkeparti
+            { navn: "Majen Helen Sævik", funksjon: "Leder", representerer: "Kristelig Folkeparti", forkortelse: "KrF", telefon: "93093307", epost: "majen.helen.savik@trondheim.kommune.no" },
+            { navn: "Solveig Paula Kopperstad Bratseth", funksjon: "Varamedlem", representerer: "Kristelig Folkeparti", forkortelse: "KrF", telefon: "90825020", epost: "Sb326@kirken.no" },
+            { navn: "Alexander Mentzoni", funksjon: "Varamedlem", representerer: "Kristelig Folkeparti", forkortelse: "KrF", telefon: "92234891", epost: "alexander.mentzoni@me.com" },
+            { navn: "Arne Ivar Denstad", funksjon: "Varamedlem", representerer: "Kristelig Folkeparti", forkortelse: "KrF", telefon: "92264982", epost: "arne.denstad@gmail.com" },
+            // Rødt
+            { navn: "Tarjei Fiske Fjalestad", funksjon: "Varamedlem", representerer: "Rødt", forkortelse: "R", telefon: "47640166", epost: "tarjei.fjalestad@trondheim.kommune.no" }
+        ];
+
+        function getUniquePartiesFromData() {
+            const parties = new Map();
+            politikerData.forEach(p => {
+                if (p.representerer && !parties.has(p.representerer.toLowerCase())) {
+                    parties.set(p.representerer.toLowerCase(), {
+                        navn: p.representerer,
+                        forkortelse: p.forkortelse || ''
+                    });
+                }
+            });
+            return Array.from(parties.values()).sort((a, b) => a.navn.localeCompare(b.navn));
+        }
+
+        function renderPartyCheckboxes() {
+            partiCheckboxContainer.innerHTML = '';
+            const uniqueParties = getUniquePartiesFromData();
+            
+            uniqueParties.forEach(party => {
+                const checkboxId = `parti-${(party.forkortelse || party.navn).replace(/\s+/g, '-').toLowerCase()}`;
+                const label = document.createElement('label');
+                label.htmlFor = checkboxId;
+                label.className = 'text-sm text-slate-700 hover:bg-slate-100 p-1 rounded';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = checkboxId;
+                checkbox.value = party.navn; 
+                checkbox.name = 'partiValg';
+                checkbox.addEventListener('change', () => {
+                    updatePolitikerListe();
+                    const allPartyCheckboxes = partiCheckboxContainer.querySelectorAll('input[name="partiValg"]');
+                    const allChecked = Array.from(allPartyCheckboxes).every(cb => cb.checked);
+                    selectAllPartiesCheckbox.checked = allChecked;
+                });
+                
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(` ${party.navn} (${party.forkortelse})`));
+                partiCheckboxContainer.appendChild(label);
+            });
+        }
+
+        selectAllPartiesCheckbox.addEventListener('change', () => {
+            const isChecked = selectAllPartiesCheckbox.checked;
+            const allPartyCheckboxes = partiCheckboxContainer.querySelectorAll('input[name="partiValg"]');
+            allPartyCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            updatePolitikerListe();
+        });
+
+
+        function openSingleEmailClient(politicianEmail) {
+            if(epostTekstDisplay.textContent.trim() === "") {
+                showModal("Det er ingen e-posttekst å sende ennå. Generer e-posten først.");
+                return;
+            }
+            const subject = encodeURIComponent("Angående skolesammenslåing på Tiller (Tonstad skole)");
+            const body = encodeURIComponent(epostTekstDisplay.textContent);
+            const mailtoLink = `mailto:${politicianEmail}?subject=${subject}&body=${body}`;
+            
+            const newWindow = window.open(mailtoLink, '_blank');
+            if (!newWindow || newWindow.closed || typeof newWindow.closed=='undefined') {
+                showModal('Kunne ikke åpne e-postklienten automatisk. Prøv å kopiere teksten manuelt.');
+            }
+        }
+
+        function getSelectedParties() {
+            const selectedParties = [];
+            const checkboxes = partiCheckboxContainer.querySelectorAll('input[name="partiValg"]:checked');
+            checkboxes.forEach(checkbox => {
+                selectedParties.push(checkbox.value);
+            });
+            return selectedParties;
+        }
+
+        function updatePolitikerListe() {
+            const selectedParties = getSelectedParties();
+            politikerListe.innerHTML = ''; 
+            politikerListeTomMelding.classList.add('hidden');
+
+            if (selectedParties.length === 0) {
+                politikerListeOverskrift.textContent = 'Ingen partier valgt';
+                politikerListeTomMelding.classList.remove('hidden');
+                politikerListeContainer.classList.remove('hidden'); 
+                selectAllPartiesCheckbox.checked = false; 
+                return;
+            }
+            
+            politikerListeContainer.classList.remove('hidden');
+
+            const partyNamesText = selectedParties.map(partyName => {
+                const partyObj = politikerData.find(p => p.representerer === partyName);
+                return partyObj ? `${partyObj.representerer} (${partyObj.forkortelse})` : partyName;
+            }).join(', ');
+            
+            if (selectAllPartiesCheckbox.checked && selectedParties.length === getUniquePartiesFromData().length) {
+                 politikerListeOverskrift.textContent = `E-postadresser for: Alle partier (hele bystyret)`;
+            } else {
+                 politikerListeOverskrift.textContent = `E-postadresser for: ${partyNamesText}`;
+            }
+
+
+            const filteredPoliticians = politikerData.filter(politiker => 
+                selectedParties.includes(politiker.representerer)
+            );
+
+            if (filteredPoliticians.length > 0) {
+                filteredPoliticians.forEach(politiker => {
+                    if (politiker.epost) { 
+                        const listItem = document.createElement('li');
+                        listItem.innerHTML = `
+                            <div class="flex flex-col sm:flex-row justify-between sm:items-start">
+                                <div class="mb-1 sm:mb-0 sm:mr-2">
+                                    <span class="font-medium text-slate-800">${politiker.navn}</span>
+                                    <span class="text-xs text-slate-500 block">(${politiker.representerer} / ${politiker.forkortelse || ''}, ${politiker.funksjon})</span>
+                                    ${politiker.telefon ? `<span class="text-xs text-slate-500 block mt-0.5">Tlf: ${politiker.telefon}</span>` : ''}
+                                </div>
+                                <span class="clickable-link text-sm self-start sm:self-auto mt-1 sm:mt-0" 
+                                      onclick="openSingleEmailClient('${politiker.epost}')" 
+                                      title="Åpne e-post til ${politiker.navn}: ${politiker.epost}">
+                                    ${politiker.epost}
+                                </span>
+                            </div>
+                        `;
+                        politikerListe.appendChild(listItem);
+                    }
+                });
+            } else {
+                politikerListe.innerHTML = `<li class="text-slate-500 p-3 text-center">Ingen politikere funnet for de valgte partiene.</li>`;
+            }
+
+            const allPartyCheckboxes = partiCheckboxContainer.querySelectorAll('input[name="partiValg"]');
+            if (allPartyCheckboxes.length > 0) { 
+                 const allChecked = Array.from(allPartyCheckboxes).every(cb => cb.checked);
+                 if (allChecked && selectedParties.length === allPartyCheckboxes.length) {
+                     selectAllPartiesCheckbox.checked = true;
+                 } else { 
+                     selectAllPartiesCheckbox.checked = false;
+                 }
+            }
+        }
+
+        kopierEpostButton.addEventListener('click', () => {
+            if(epostTekstDisplay.textContent.trim() === "") {
+                showModal("Det er ingen e-posttekst å kopiere ennå. Generer e-posten først.");
+                return;
+            }
+            copyToClipboard(epostTekstDisplay.textContent);
+        });
+        
+        function copyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showModal('Kopiert til utklippstavlen!'); 
+            } catch (err) {
+                console.error('Clipboard copy failed:', err);
+                showModal('Kopiering mislyktes. Prøv å kopiere manuelt.');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        sendEpostLink.addEventListener('click', (event) => {
+            event.preventDefault(); 
+
+            if(epostTekstDisplay.textContent.trim() === "") {
+                showModal("Det er ingen e-posttekst å sende ennå. Generer e-posten først.");
+                return;
+            }
+
+            const selectedParties = getSelectedParties();
+            if (selectedParties.length === 0) {
+                showModal("Vennligst velg minst ett parti du ønsker å sende e-post til.");
+                return;
+            }
+
+            const subject = encodeURIComponent("Angående skolesammenslåing på Tiller (Tonstad skole)");
+            const body = encodeURIComponent(epostTekstDisplay.textContent);
+
+            const bccEmails = politikerData
+                .filter(p => selectedParties.includes(p.representerer) && p.epost)
+                .map(p => p.epost);
+
+            if (bccEmails.length === 0) {
+                 showModal(`Ingen e-postadresser funnet for de valgte partiene.`);
+                 return;
+            }
+            
+            const bcc = bccEmails.join(',');
+            const mailtoLink = `mailto:?bcc=${bcc}&subject=${subject}&body=${body}`;
+            
+            const newWindow = window.open(mailtoLink, '_blank');
+            if (!newWindow || newWindow.closed || typeof newWindow.closed=='undefined') {
+                showModal('Kunne ikke åpne e-postklienten automatisk. Prøv å kopiere teksten og e-postadressene manuelt.');
+            }
+        });
+
+        async function generateEmail() {
+            const navn = navnInput.value.trim();
+            const adresse = adresseInput.value.trim();
+            const personligAarsak = personligAarsakTextarea.value.trim(); 
+            
+            aiLoaderHoved.style.display = 'inline-block'; 
+            aiLoaderNyttUtkast.style.display = 'inline-block';
+            aiStatus.textContent = 'KI genererer e-postforslag, vennligst vent...';
+            hovedKnapp.disabled = true;
+            hovedKnapp.classList.add('opacity-75', 'cursor-not-allowed');
+            genererNyttUtkastKnapp.disabled = true;
+            genererNyttUtkastKnapp.classList.add('opacity-75', 'cursor-not-allowed');
+
+            const toneVariationSeeds = [ 
+                "Fokuser gjerne litt ekstra på konsekvensene for barnas skolemiljø og trygghet.",
+                "Understrek viktigheten av foreldreinvolvering og lokalsamfunnets stemme i slike prosesser.",
+                "Presenter argumentene med en spesielt klar, direkte og overbevisende tone.",
+                "Varier ordvalget og setningsoppbyggingen for å gi e-posten et unikt preg, unngå standardformuleringer.",
+                "Legg vekt på behovet for langsiktige, helhetlige løsninger som tjener hele lokalsamfunnet på Tiller.",
+                "Formuler bekymringene på en måte som appellerer sterkt til politikernes ansvarsfølelse for barnas beste.",
+                "Fremhev bekymringen for at de yngste barna og de fra Rosten skole kan bli skadelidende.",
+                "Still kritiske spørsmål ved beslutningsgrunnlaget og ROS-analysen som er benyttet."
+            ];
+            const randomToneSeed = toneVariationSeeds[Math.floor(Math.random() * toneVariationSeeds.length)];
+
+            let senderInfoForPrompt = "Avsenderen har valgt å ikke oppgi navn eller adresse, men er en bekymret innbygger.";
+            if (navn && adresse) {
+                senderInfoForPrompt = `Avsender er ${navn}, bosatt på adressen ${adresse} (en innbygger i Trondheim kommune).`;
+            } else if (navn) {
+                senderInfoForPrompt = `Avsender er ${navn}.`;
+            } else if (adresse) {
+                senderInfoForPrompt = `Avsender er en innbygger bosatt på adressen ${adresse} (en innbygger i Trondheim kommune).`;
+            }
+            
+            let emailSignature = "Med vennlig hilsen,";
+            if (navn) {
+                emailSignature += `\n${navn}`;
+            }
+            if (adresse) {
+                emailSignature += `\n${adresse}`;
+                 if (navn) { 
+                    emailSignature += `\n(Innbygger i Trondheim kommune)`;
+                 } else { 
+                    emailSignature += `\n(Innbygger i Trondheim kommune med bostedsadresse ovenfor)`;
+                 }
+            }
+            if (!navn && !adresse) { 
+                emailSignature += `\nEn bekymret innbygger i Trondheim`;
+            }
+
+             const allArguments = [
+                {
+                    core_idea: "Barnets Beste & Juridiske Forpliktelser",
+                    phrasing_variations: [
+                        "Vi minner om at barnets beste skal være et grunnleggende hensyn i alle beslutninger som berører dem, slik det er nedfelt i både norsk lov og internasjonale konvensjoner. Føler dere virkelig at dette er ivaretatt her?",
+                        "Den foreslåtte løsningen ser ut til å overse den klare juridiske og etiske forpliktelsen kommunen har til å sette barnas behov først. Hvordan kan denne planen forsvares i lys av Barnekonvensjonen?",
+                        "Vi forventer at en så inngripende endring bygger på en grundig og synlig vurdering av hva som faktisk er til barnas beste, ikke bare administrative eller økonomiske hensyn."
+                    ]
+                },
+                {
+                    core_idea: "Tap av Trygge Voksne",
+                    phrasing_variations: [
+                        "Å frata barna deres kjente og trygge lærere og miljøpersonale ved å tvinge dem gjennom en usikker søknadsprosess til en midlertidig skole, er uakseptabelt. Hvor er kontinuiteten for barna våre?",
+                        "Det er naivt å tro at mange erfarne lærere vil prioriterer å søke seg til en krevende interimskole. Resultatet blir at barna mister de voksne de stoler på, i en allerede sårbar overgang.",
+                        "Hvordan kan kommunen sikre at barna får med seg sine trygghetspersoner når de ansatte ikke automatisk følger med, men må søke jobber på nytt under usikre forhold?"
+                    ]
+                },
+                {
+                    core_idea: "Kumulative Belastninger og Brudd",
+                    phrasing_variations: [
+                        "Denne planen påfører barna våre en unødvendig opphopning av brudd og stress: ny skole, nye voksne, nye klasser, og for mange, en lang periode på en interimskole. Er dette virkelig til barnas beste?",
+                        "Å flytte barneskoleelever først til en midlertidig skole, for så å flytte dem igjen, er å eksperimentere med deres trivsel og læring. Dette er en maksimering av usikkerhet.",
+                        "Kommunen har ingen tidligere erfaring med å slå sammen to skoler og samtidig sende dem til en felles interimskole. Hvorfor skal våre barn være prøvekaniner i et slikt risikabelt prosjekt?"
+                    ]
+                },
+                {
+                    core_idea: "Psykologiske & Sosiale Konsekvenser",
+                    phrasing_variations: [
+                        "Gjentatte skolebytter og tap av venner og trygge voksne kan gi alvorlige psykiske og sosiale ettervirkninger for barn. Har dere vurdert den reelle menneskelige kostnaden ved denne planen?",
+                        "Å rive opp etablerte klassemiljøer og vennskap, for så å forvente at barna skal bygge nye relasjoner i et midlertidig miljø, er en stor belastning. Hvordan skal barna klare å finne ro til læring under slike forhold?",
+                        "Nærskolen er limet i mange barns sosiale liv. Å sende dem til en interimskole i 2-3 år kan svekke deres lokale tilhørighet og sosiale nettverk."
+                    ]
+                },
+                 {
+                    core_idea: "Prosessuelle Mangler og Manglende Medvirkning",
+                    phrasing_variations: [
+                        "Vi som foreldre føler oss fullstendig overkjørt i denne prosessen. Beslutningen om fremskyndet sammenslåing kom uten reell dialog eller mulighet for medvirkning, stikk i strid med kommunens egne løfter.",
+                        "Det er uakseptabelt at foreldre bevisst holdes utenfor en prosess som i så stor grad påvirker våre barns hverdag, med begrunnelse i 'kapasitetshensyn' hos administrasjonen.",
+                        "Hvordan kan kommunen hevde at barnets beste er ivaretatt når barnas stemmer ikke er blitt hørt på en meningsfull måte i denne saken?"
+                    ]
+                },
+                {
+                    core_idea: "Uholdbare Argumenter for Fremskynding",
+                    phrasing_variations: [
+                        "Å prioritere ungdomsskoleelevers stabilitet ved å la barneskoleelever bære byrden av interimskole, virker som en ansvarsfraskrivelse. Tidlig innsats og trygghet er vel så viktig for de yngste.",
+                        "Tidslinjen for det nye skolebygget virker urealistisk optimistisk. Å basere en så drastisk fremskynding på et usikkert ferdigstillingstidspunkt er uforsvarlig.",
+                        "Vi savner en åpen og ærlig økonomisk sammenligning av kostnadene ved interimløsningen kontra å vente på nytt permanent bygg. Er dette egentlig en spareøvelse på bekostning av barna?"
+                    ]
+                },
+                {
+                    core_idea: "Avskalling til private skoler",
+                    phrasing_variations: [
+                        "Det er en reell fare for at mange foreldre vil velge private skoletilbud dersom våre barn tvinges til en langvarig og usikker periode på en midlertidig skole. Dette vil svekke den offentlige skolen og lokalsamfunnet.",
+                        "En konsekvens av denne planen kan bli økt søkning til private skoler, noe som vil fragmentere elevmassen og potensielt redusere ressursene til den offentlige skolen på sikt.",
+                        "Frykten for at barn skal tilbringe flere år på en interimskole, gjør at mange vurderer alternativer utenfor det offentlige skoletilbudet. Dette er en uønsket utvikling for Tiller."
+                    ]
+                },
+                {
+                    core_idea: "Tap av klassesammensetning som trygghetsfaktor",
+                    phrasing_variations: [
+                        "Planer om å splitte eksisterende klasser og blande elever fra Rosten og Tonstad ved overføring til interimskolen vil fjerne ytterligere en viktig trygghetsfaktor for barn som allerede står overfor store omveltninger.",
+                        "Å bryte opp velfungerende klasser er en ekstra, unødvendig belastning for elevene i en allerede krevende situasjon med skolebytte.",
+                        "Barnas etablerte sosiale nettverk i klassen er en buffer mot stress. Å splitte klassene undergraver denne tryggheten."
+                    ]
+                },
+                {
+                    core_idea: "Feiltolkning av Formannskapets vedtak",
+                    phrasing_variations: [
+                        "Formannskapets vedtak om en tidsramme på 2-4 år for endringer var ment å gi rom for en grundig og inkluderende prosess, ikke et pålegg om forhastede løsninger.",
+                        "Kommunen ser ut til å ha feiltolket intensjonen bak Formannskapets vedtak, som la vekt på langsiktighet og involvering, noe denne prosessen har manglet.",
+                        "Det er viktig å minne om at Formannskapets tidsramme var en mulighet for god planlegging, ikke en unnskyldning for å fremskynde en dårlig utredet løsning."
+                    ]
+                }
+            ];
+
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            shuffleArray(allArguments);
+            const numberOfArgumentsToInclude = Math.floor(Math.random() * 4) + 3; 
+            const selectedArgumentsForEmail = allArguments.slice(0, numberOfArgumentsToInclude);
+
+            let argumentSectionForPrompt = "E-posten bør bygge på noen av følgende bekymringer, formulert på en engasjerende og variert måte:\n";
+            selectedArgumentsForEmail.forEach(arg => {
+                const randomPhrasing = arg.phrasing_variations[Math.floor(Math.random() * arg.phrasing_variations.length)];
+                argumentSectionForPrompt += `- ${randomPhrasing}\n`;
+            });
+
+            const structureVariationSeeds = [
+                "Strukturer e-posten med 3-4 tydelige avsnitt i hoveddelen, i tillegg til innledning og avslutning.",
+                "Varier lengden på avsnittene for å skape en god dynamikk i teksten. Noen kan være korte og poengterte, andre mer utdypende.",
+                "Sørg for en logisk progresjon mellom avsnittene, der hvert avsnitt bygger videre på det forrige.",
+                "Vurder å starte et avsnitt med et retorisk spørsmål for å engasjere leseren, og sørg for at antall avsnitt totalt varierer noe fra gang til gang."
+            ];
+            const randomStructureSeed = structureVariationSeeds[Math.floor(Math.random() * structureVariationSeeds.length)];
+
+            const selectedParties = getSelectedParties();
+            let salutation = "Til de folkevalgte i Trondheim kommune,"; 
+            if (selectedParties.length === 1) {
+                const partyName = selectedParties[0]; 
+                salutation = `Kjære ${partyName} politikere,`;
+            }
+
+
+            // Data (navn, adresse, personligAarsak) sendes til Google Gemini API for behandling
+            const prompt = `
+                Skriv en formell og engasjerende e-post på norsk (bokmål) til politikere i Trondheim kommune.
+                E-posten skal uttrykke dyp bekymring angående den foreslåtte skolesammenslåingen på Tiller.
+                ${senderInfoForPrompt}
+
+                Dersom følgende personlige historie/årsak er oppgitt (feltet kan være tomt), bruk den som inspirasjon og flett den naturlig inn i teksten. Hvis feltet er tomt, fokuser utelukkende på de generelle argumentene.
+                Personlig historie/årsak: "${personligAarsak}"
+
+                ${argumentSectionForPrompt}
+
+                Tonen skal være alvorlig, men respektfull og løsningsorientert. Unngå aggressivt språk.
+                Sørg for god flyt og klare poenger.
+
+                For å sikre at denne e-posten blir unik og ikke en standard mal, vennligst innarbeid følgende nyanse eller fokus i din formulering: ${randomToneSeed}.
+                Vennligst varier også strukturen på e-posten, for eksempel ved å følge denne instruksjonen og variere antall avsnitt: ${randomStructureSeed}
+
+                Struktur:
+                1. Emnefelt (ikke inkluder "Emne:" i selve teksten, kun innholdet til emnefeltet. Dette blir satt i mailto-linken senere, men det er greit om KI-en foreslår et her for fullstendighetens skyld, som "Bekymringsmelding vedrørende skolesammenslåing på Tiller").
+                2. Start e-posten med NØYAKTIG følgende hilsen (uten endringer): "${salutation}"
+                3. Introduksjon av avsender (basert på informasjonen gitt i '${senderInfoForPrompt}') og formål med henvendelsen.
+                4. Utdyping av bekymringer med argumenter (basert på '${argumentSectionForPrompt}') og eventuell personlig historie. Antall avsnitt her bør varieres.
+                5. En konstruktiv og kraftfull appell til handling i siste avsnitt før signaturen. Denne appellen MÅ understreke politikernes ansvar som folkevalgte og viktigheten av at de setter seg grundig inn i saken for å sikre en god og trygg skolegang for alle berørte barn. Oppfordre dem sterkt til å lytte til lokalsamfunnet og revurdere beslutningen.
+                6. Formell avslutning og signatur. Bruk følgende som mal for signaturen:
+                   ${emailSignature}
+            `;
+
+            try {
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                // VIKTIG: Canvas-miljøet forventes å håndtere API-nøkkelen når apiKey er en tom streng.
+                // For ekstern hosting, må en gyldig API-nøkkel settes inn her.
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('API Error:', errorData);
+                    throw new Error(`API request failed with status ${response.status}: ${errorData?.error?.message || 'Unknown error'}`);
+                }
+
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    let generatedText = result.candidates[0].content.parts[0].text;
+                    
+                    generatedText = generatedText.replace(/^Emne:.*?\n/i, '').trim();
+
+                    epostTekstDisplay.textContent = generatedText;
+                    epostForhaandsvisningSeksjon.classList.remove('hidden');
+                    stickyWarningToast.classList.remove('hidden');
+                    setTimeout(() => {
+                        stickyWarningToast.classList.add('show'); 
+                    }, 10);
+                    aiStatus.textContent = 'E-postforslag er generert!';
+                    epostForhaandsvisningSeksjon.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                } else {
+                    console.error('Unexpected API response structure:', result);
+                    showModal('Kunne ikke generere e-post. Uventet svarformat fra KI. Prøv igjen.');
+                    aiStatus.textContent = 'Feil: Uventet svarformat.';
+                    stickyWarningToast.classList.add('hidden'); 
+                    stickyWarningToast.classList.remove('show');
+                }
+            } catch (error) {
+                console.error('Error generating email:', error);
+                showModal(`En feil oppstod under generering av e-post: ${error.message}. Vennligst sjekk nettverket og prøv igjen.`);
+                aiStatus.textContent = 'Feil ved generering.';
+                stickyWarningToast.classList.add('hidden'); 
+                stickyWarningToast.classList.remove('show');
+            } finally {
+                aiLoaderHoved.style.display = 'none';
+                aiLoaderNyttUtkast.style.display = 'none';
+                hovedKnapp.disabled = false;
+                hovedKnapp.classList.remove('opacity-75', 'cursor-not-allowed');
+                genererNyttUtkastKnapp.disabled = false;
+                genererNyttUtkastKnapp.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+        }
+
+        hovedKnapp.addEventListener('click', generateEmail);
+        genererNyttUtkastKnapp.addEventListener('click', generateEmail);
+        
+        renderPartyCheckboxes();
+        updatePolitikerListe();
+    </script>
+</body>
+</html>
