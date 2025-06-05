@@ -235,7 +235,7 @@
 
              <div class="mt-4">
                 <button id="genererNyttUtkastKnapp" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center">
-                    Generer nytt utkast 
+                    Generer nytt utkast 🔄
                     <div id="aiLoaderNyttUtkast" class="loader"></div>
                 </button>
             </div>
@@ -704,208 +704,38 @@
             genererNyttUtkastKnapp.disabled = true;
             genererNyttUtkastKnapp.classList.add('opacity-75', 'cursor-not-allowed');
 
-            const toneVariationSeeds = [ 
-                "Fokuser gjerne litt ekstra på konsekvensene for barnas skolemiljø og trygghet.",
-                "Understrek viktigheten av foreldreinvolvering og lokalsamfunnets stemme i slike prosesser.",
-                "Presenter argumentene med en spesielt klar, direkte og overbevisende tone.",
-                "Varier ordvalget og setningsoppbyggingen for å gi e-posten et unikt preg, unngå standardformuleringer.",
-                "Legg vekt på behovet for langsiktige, helhetlige løsninger som tjener hele lokalsamfunnet på Tiller.",
-                "Formuler bekymringene på en måte som appellerer sterkt til politikernes ansvarsfølelse for barnas beste.",
-                "Fremhev bekymringen for at de yngste barna og de fra Rosten skole kan bli skadelidende.",
-                "Still kritiske spørsmål ved beslutningsgrunnlaget og ROS-analysen som er benyttet."
-            ];
-            const randomToneSeed = toneVariationSeeds[Math.floor(Math.random() * toneVariationSeeds.length)];
-
-            let senderInfoForPrompt = "Avsenderen har valgt å ikke oppgi navn eller adresse, men er en bekymret innbygger.";
-            if (navn && adresse) {
-                senderInfoForPrompt = `Avsender er ${navn}, bosatt på adressen ${adresse} (en innbygger i Trondheim kommune).`;
-            } else if (navn) {
-                senderInfoForPrompt = `Avsender er ${navn}.`;
-            } else if (adresse) {
-                senderInfoForPrompt = `Avsender er en innbygger bosatt på adressen ${adresse} (en innbygger i Trondheim kommune).`;
-            }
-            
-            let emailSignature = "Med vennlig hilsen,";
-            if (navn) {
-                emailSignature += `\n${navn}`;
-            }
-            if (adresse) {
-                emailSignature += `\n${adresse}`;
-                 if (navn) { 
-                    emailSignature += `\n(Innbygger i Trondheim kommune)`;
-                 } else { 
-                    emailSignature += `\n(Innbygger i Trondheim kommune med bostedsadresse ovenfor)`;
-                 }
-            }
-            if (!navn && !adresse) { 
-                emailSignature += `\nEn bekymret innbygger i Trondheim`;
-            }
-
-             const allArguments = [
-                {
-                    core_idea: "Barnets Beste & Juridiske Forpliktelser",
-                    phrasing_variations: [
-                        "Vi minner om at barnets beste skal være et grunnleggende hensyn i alle beslutninger som berører dem, slik det er nedfelt i både norsk lov og internasjonale konvensjoner. Føler dere virkelig at dette er ivaretatt her?",
-                        "Den foreslåtte løsningen ser ut til å overse den klare juridiske og etiske forpliktelsen kommunen har til å sette barnas behov først. Hvordan kan denne planen forsvares i lys av Barnekonvensjonen?",
-                        "Vi forventer at en så inngripende endring bygger på en grundig og synlig vurdering av hva som faktisk er til barnas beste, ikke bare administrative eller økonomiske hensyn."
-                    ]
-                },
-                {
-                    core_idea: "Tap av Trygge Voksne",
-                    phrasing_variations: [
-                        "Å frata barna deres kjente og trygge lærere og miljøpersonale ved å tvinge dem gjennom en usikker søknadsprosess til en midlertidig skole, er uakseptabelt. Hvor er kontinuiteten for barna våre?",
-                        "Det er naivt å tro at mange erfarne lærere vil prioriterer å søke seg til en krevende interimskole. Resultatet blir at barna mister de voksne de stoler på, i en allerede sårbar overgang.",
-                        "Hvordan kan kommunen sikre at barna får med seg sine trygghetspersoner når de ansatte ikke automatisk følger med, men må søke jobber på nytt under usikre forhold?"
-                    ]
-                },
-                {
-                    core_idea: "Kumulative Belastninger og Brudd",
-                    phrasing_variations: [
-                        "Denne planen påfører barna våre en unødvendig opphopning av brudd og stress: ny skole, nye voksne, nye klasser, og for mange, en lang periode på en interimskole. Er dette virkelig til barnas beste?",
-                        "Å flytte barneskoleelever først til en midlertidig skole, for så å flytte dem igjen, er å eksperimentere med deres trivsel og læring. Dette er en maksimering av usikkerhet.",
-                        "Kommunen har ingen tidligere erfaring med å slå sammen to skoler og samtidig sende dem til en felles interimskole. Hvorfor skal våre barn være prøvekaniner i et slikt risikabelt prosjekt?"
-                    ]
-                },
-                {
-                    core_idea: "Psykologiske & Sosiale Konsekvenser",
-                    phrasing_variations: [
-                        "Gjentatte skolebytter og tap av venner og trygge voksne kan gi alvorlige psykiske og sosiale ettervirkninger for barn. Har dere vurdert den reelle menneskelige kostnaden ved denne planen?",
-                        "Å rive opp etablerte klassemiljøer og vennskap, for så å forvente at barna skal bygge nye relasjoner i et midlertidig miljø, er en stor belastning. Hvordan skal barna klare å finne ro til læring under slike forhold?",
-                        "Nærskolen er limet i mange barns sosiale liv. Å sende dem til en interimskole i 2-3 år kan svekke deres lokale tilhørighet og sosiale nettverk."
-                    ]
-                },
-                 {
-                    core_idea: "Prosessuelle Mangler og Manglende Medvirkning",
-                    phrasing_variations: [
-                        "Vi som foreldre føler oss fullstendig overkjørt i denne prosessen. Beslutningen om fremskyndet sammenslåing kom uten reell dialog eller mulighet for medvirkning, stikk i strid med kommunens egne løfter.",
-                        "Det er uakseptabelt at foreldre bevisst holdes utenfor en prosess som i så stor grad påvirker våre barns hverdag, med begrunnelse i 'kapasitetshensyn' hos administrasjonen.",
-                        "Hvordan kan kommunen hevde at barnets beste er ivaretatt når barnas stemmer ikke er blitt hørt på en meningsfull måte i denne saken?"
-                    ]
-                },
-                {
-                    core_idea: "Uholdbare Argumenter for Fremskynding",
-                    phrasing_variations: [
-                        "Å prioritere ungdomsskoleelevers stabilitet ved å la barneskoleelever bære byrden av interimskole, virker som en ansvarsfraskrivelse. Tidlig innsats og trygghet er vel så viktig for de yngste.",
-                        "Tidslinjen for det nye skolebygget virker urealistisk optimistisk. Å basere en så drastisk fremskynding på et usikkert ferdigstillingstidspunkt er uforsvarlig.",
-                        "Vi savner en åpen og ærlig økonomisk sammenligning av kostnadene ved interimløsningen kontra å vente på nytt permanent bygg. Er dette egentlig en spareøvelse på bekostning av barna?"
-                    ]
-                },
-                {
-                    core_idea: "Avskalling til private skoler",
-                    phrasing_variations: [
-                        "Det er en reell fare for at mange foreldre vil velge private skoletilbud dersom våre barn tvinges til en langvarig og usikker periode på en midlertidig skole. Dette vil svekke den offentlige skolen og lokalsamfunnet.",
-                        "En konsekvens av denne planen kan bli økt søkning til private skoler, noe som vil fragmentere elevmassen og potensielt redusere ressursene til den offentlige skolen på sikt.",
-                        "Frykten for at barn skal tilbringe flere år på en interimskole, gjør at mange vurderer alternativer utenfor det offentlige skoletilbudet. Dette er en uønsket utvikling for Tiller."
-                    ]
-                },
-                {
-                    core_idea: "Tap av klassesammensetning som trygghetsfaktor",
-                    phrasing_variations: [
-                        "Planer om å splitte eksisterende klasser og blande elever fra Rosten og Tonstad ved overføring til interimskolen vil fjerne ytterligere en viktig trygghetsfaktor for barn som allerede står overfor store omveltninger.",
-                        "Å bryte opp velfungerende klasser er en ekstra, unødvendig belastning for elevene i en allerede krevende situasjon med skolebytte.",
-                        "Barnas etablerte sosiale nettverk i klassen er en buffer mot stress. Å splitte klassene undergraver denne tryggheten."
-                    ]
-                },
-                {
-                    core_idea: "Feiltolkning av Formannskapets vedtak",
-                    phrasing_variations: [
-                        "Formannskapets vedtak om en tidsramme på 2-4 år for endringer var ment å gi rom for en grundig og inkluderende prosess, ikke et pålegg om forhastede løsninger.",
-                        "Kommunen ser ut til å ha feiltolket intensjonen bak Formannskapets vedtak, som la vekt på langsiktighet og involvering, noe denne prosessen har manglet.",
-                        "Det er viktig å minne om at Formannskapets tidsramme var en mulighet for god planlegging, ikke en unnskyldning for å fremskynde en dårlig utredet løsning."
-                    ]
-                }
-            ];
-
-            function shuffleArray(array) {
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
-                }
-            }
-
-            shuffleArray(allArguments);
-            const numberOfArgumentsToInclude = Math.floor(Math.random() * 4) + 3; 
-            const selectedArgumentsForEmail = allArguments.slice(0, numberOfArgumentsToInclude);
-
-            let argumentSectionForPrompt = "E-posten bør bygge på noen av følgende bekymringer, formulert på en engasjerende og variert måte:\n";
-            selectedArgumentsForEmail.forEach(arg => {
-                const randomPhrasing = arg.phrasing_variations[Math.floor(Math.random() * arg.phrasing_variations.length)];
-                argumentSectionForPrompt += `- ${randomPhrasing}\n`;
-            });
-
-            const structureVariationSeeds = [
-                "Strukturer e-posten med 3-4 tydelige avsnitt i hoveddelen, i tillegg til innledning og avslutning.",
-                "Varier lengden på avsnittene for å skape en god dynamikk i teksten. Noen kan være korte og poengterte, andre mer utdypende.",
-                "Sørg for en logisk progresjon mellom avsnittene, der hvert avsnitt bygger videre på det forrige.",
-                "Vurder å starte et avsnitt med et retorisk spørsmål for å engasjere leseren, og sørg for at antall avsnitt totalt varierer noe fra gang til gang."
-            ];
-            const randomStructureSeed = structureVariationSeeds[Math.floor(Math.random() * structureVariationSeeds.length)];
-
             const selectedParties = getSelectedParties();
-            let salutation = "Til de folkevalgte i Trondheim kommune,"; 
+            let selectedPartyNameForPrompt = null;
             if (selectedParties.length === 1) {
-                const partyName = selectedParties[0]; 
-                salutation = `Kjære ${partyName} politikere,`;
+                selectedPartyNameForPrompt = selectedParties[0];
             }
 
-
-            // Data (navn, adresse, personligAarsak) sendes til Google Gemini API for behandling
-            const prompt = `
-                Skriv en formell og engasjerende e-post på norsk (bokmål) til politikere i Trondheim kommune.
-                E-posten skal uttrykke dyp bekymring angående den foreslåtte skolesammenslåingen på Tiller.
-                ${senderInfoForPrompt}
-
-                Dersom følgende personlige historie/årsak er oppgitt (feltet kan være tomt), bruk den som inspirasjon og flett den naturlig inn i teksten. Hvis feltet er tomt, fokuser utelukkende på de generelle argumentene.
-                Personlig historie/årsak: "${personligAarsak}"
-
-                ${argumentSectionForPrompt}
-
-                Tonen skal være alvorlig, men respektfull og løsningsorientert. Unngå aggressivt språk.
-                Sørg for god flyt og klare poenger.
-
-                For å sikre at denne e-posten blir unik og ikke en standard mal, vennligst innarbeid følgende nyanse eller fokus i din formulering: ${randomToneSeed}.
-                Vennligst varier også strukturen på e-posten, for eksempel ved å følge denne instruksjonen og variere antall avsnitt: ${randomStructureSeed}
-
-                Struktur:
-                1. Emnefelt (ikke inkluder "Emne:" i selve teksten, kun innholdet til emnefeltet. Dette blir satt i mailto-linken senere, men det er greit om KI-en foreslår et her for fullstendighetens skyld, som "Bekymringsmelding vedrørende skolesammenslåing på Tiller").
-                2. Start e-posten med NØYAKTIG følgende hilsen (uten endringer): "${salutation}"
-                3. Introduksjon av avsender (basert på informasjonen gitt i '${senderInfoForPrompt}') og formål med henvendelsen.
-                4. Utdyping av bekymringer med argumenter (basert på '${argumentSectionForPrompt}') og eventuell personlig historie. Antall avsnitt her bør varieres.
-                5. En konstruktiv og kraftfull appell til handling i siste avsnitt før signaturen. Denne appellen MÅ understreke politikernes ansvar som folkevalgte og viktigheten av at de setter seg grundig inn i saken for å sikre en god og trygg skolegang for alle berørte barn. Oppfordre dem sterkt til å lytte til lokalsamfunnet og revurdere beslutningen.
-                6. Formell avslutning og signatur. Bruk følgende som mal for signaturen:
-                   ${emailSignature}
-            `;
+            const dataForBackend = {
+                navn: navn,
+                adresse: adresse,
+                personligAarsak: personligAarsak,
+                selectedPartyName: selectedPartyNameForPrompt
+            };
 
             try {
-                let chatHistory = [];
-                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                const payload = { contents: chatHistory };
-                // VIKTIG: Canvas-miljøet forventes å håndtere API-nøkkelen når apiKey er en tom streng.
-                // For ekstern hosting, må en gyldig API-nøkkel settes inn her.
-                const apiKey = ""; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
+                // VIKTIG: URL-en under (/api/generate-email) må tilsvare ruten 
+                // du setter opp for din Cloudflare Worker, eller være den direkte Worker URL-en.
+                const response = await fetch('https://tight-forest-fd62.kafaenify.workers.dev/', { // Justert for backend-kall
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(dataForBackend)
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error('API Error:', errorData);
-                    throw new Error(`API request failed with status ${response.status}: ${errorData?.error?.message || 'Unknown error'}`);
+                    const errorData = await response.json().catch(() => ({ error: "Ukjent feil fra server."}) ); // Fang opp hvis JSON-parsing feiler
+                    console.error('Backend API Error:', errorData);
+                    throw new Error(`API request failed with status ${response.status}: ${errorData.error || 'Ukjent serverfeil'}`);
                 }
 
                 const result = await response.json();
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    let generatedText = result.candidates[0].content.parts[0].text;
-                    
-                    generatedText = generatedText.replace(/^Emne:.*?\n/i, '').trim();
-
-                    epostTekstDisplay.textContent = generatedText;
+                
+                if (result.emailText) {
+                    epostTekstDisplay.textContent = result.emailText;
                     epostForhaandsvisningSeksjon.classList.remove('hidden');
                     stickyWarningToast.classList.remove('hidden');
                     setTimeout(() => {
@@ -913,17 +743,23 @@
                     }, 10);
                     aiStatus.textContent = 'E-postforslag er generert!';
                     epostForhaandsvisningSeksjon.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
+                } else if (result.error) {
+                    console.error('Error from backend:', result.error);
+                    showModal(`Kunne ikke generere e-post: ${result.error}. Prøv igjen.`);
+                    aiStatus.textContent = `Feil: ${result.error}`;
+                    stickyWarningToast.classList.add('hidden'); 
+                    stickyWarningToast.classList.remove('show');
                 } else {
                     console.error('Unexpected API response structure:', result);
-                    showModal('Kunne ikke generere e-post. Uventet svarformat fra KI. Prøv igjen.');
-                    aiStatus.textContent = 'Feil: Uventet svarformat.';
+                    showModal('Kunne ikke generere e-post. Uventet svarformat fra server. Prøv igjen.');
+                    aiStatus.textContent = 'Feil: Uventet svarformat fra server.';
                     stickyWarningToast.classList.add('hidden'); 
                     stickyWarningToast.classList.remove('show');
                 }
+
             } catch (error) {
-                console.error('Error generating email:', error);
-                showModal(`En feil oppstod under generering av e-post: ${error.message}. Vennligst sjekk nettverket og prøv igjen.`);
+                console.error('Error calling backend or processing response:', error);
+                showModal(`En feil oppstod: ${error.message}. Vennligst sjekk nettverket og prøv igjen.`);
                 aiStatus.textContent = 'Feil ved generering.';
                 stickyWarningToast.classList.add('hidden'); 
                 stickyWarningToast.classList.remove('show');
