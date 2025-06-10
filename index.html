@@ -255,23 +255,6 @@
             </div>
         </div>
         
-        <div id="allePolitikereContainer" class="mb-8 pt-6 border-t border-slate-200">
-            <h3 class="text-xl font-semibold text-slate-700 mb-3">Kontaktinformasjon til bystyret</h3>
-             <div id="innsynsportalSeksjon" class="mb-4 text-sm text-slate-600">
-                 <p>
-                     Fullstendig kontaktinformasjon for bystyrets medlemmer finner du på Trondheim kommunes innsynsportal:
-                     <a href="https://trondheim.innsynsportal.no/sru?commission_id=5002" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-700 hover:underline font-medium">
-                         Innsynsportal - Trondheim Bystyre
-                     </a>.
-                 </p>
-            </div>
-            <p class="text-xs text-slate-500 mb-3">Klikk på et parti for å se/skjule representanter. Når du klikker på en e-postadresse, åpnes en ny e-post til kun den mottakeren (hvis e-postforslag er generert).</p>
-            <div id="allePolitikereListe" class="list-none pl-0 space-y-1">
-                <!-- Expandable party lists will be inserted here -->
-            </div>
-        </div>
-
-
         <div id="epostForhaandsvisningSeksjon" class="hidden mt-8 space-y-6">
             <div>
                 <h2 class="text-xl font-semibold text-indigo-600 mb-3">Forhåndsvisning av e-post:</h2>
@@ -300,13 +283,30 @@
                 Om dette ikke fungerer optimalt (f.eks. ved mange mottakere), bruk "Kopier e-posttekst"-knappen. Lim så inn teksten og e-postadressene manuelt.
             </p>
             
-            <div id="politikerListeContainer" class="mt-6 pt-6 border-t border-slate-200"> 
+            <div id="politikerListeContainer" class="mt-6 pt-6 border-t border-slate-200"> {/* This is the PREVIEW list container */}
                 <h3 id="politikerListeOverskrift" class="text-lg font-semibold text-slate-700 mb-3"></h3>
                 <ul id="politikerListe" class="list-none pl-0 space-y-1">
                     </ul>
                  <p id="politikerListeTomMelding" class="text-slate-500 p-3 text-center hidden">Velg ett eller flere partier over for å se politikere i denne listen.</p>
             </div>
         </div>
+
+        <div id="allePolitikereContainer" class="mb-8 pt-6 border-t border-slate-200">
+            <h3 class="text-xl font-semibold text-slate-700 mb-3">Kontaktinformasjon til bystyret</h3>
+             <div id="innsynsportalSeksjon" class="mb-4 text-sm text-slate-600">
+                 <p>
+                     Fullstendig kontaktinformasjon for bystyrets medlemmer finner du på Trondheim kommunes innsynsportal:
+                     <a href="https://trondheim.innsynsportal.no/sru?commission_id=5002" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-700 hover:underline font-medium">
+                         Innsynsportal - Trondheim Bystyre
+                     </a>.
+                 </p>
+            </div>
+            <p class="text-xs text-slate-500 mb-3">Klikk på et parti for å se/skjule representanter. Når du klikker på en e-postadresse, åpnes en ny e-post til kun den mottakeren (hvis e-postforslag er generert).</p>
+            <div id="allePolitikereListe" class="list-none pl-0 space-y-1">
+                <!-- Expandable party lists will be inserted here -->
+            </div>
+        </div>
+
     </div>
 
     <div id="messageModal" class="modal">
@@ -685,36 +685,40 @@
         }
 
         function updatePolitikerListeEtterValg() {
-            const selectedParties = getSelectedParties();
+            let selectedParties = getSelectedParties();
             politikerListe.innerHTML = ''; 
             politikerListeTomMelding.classList.add('hidden');
 
-            // If nothing is selected, the action is to send to all. Reflect this in the preview.
-            if (selectedParties.length === 0) {
-                politikerListeOverskrift.textContent = 'E-posten vil gå til: Alle partier (hele bystyret)';
-                politikerListeTomMelding.textContent = 'Siden ingen spesifikke partier er valgt, vil e-posten bli adressert til alle representanter.';
-                politikerListeTomMelding.classList.remove('hidden');
-                selectAllPartiesCheckbox.checked = false; 
-                return;
-            }
+            let partiesForListing = [...selectedParties];
+            let headerText;
             
-            const partyNamesText = selectedParties.map(partyName => {
-                const partyObj = politikerData.find(p => p.representerer === partyName);
-                return partyObj ? `${partyObj.representerer} (${partyObj.forkortelse || 'Uavh.'})` : partyName;
-            }).join(', ');
-            
-            if (selectAllPartiesCheckbox.checked && selectedParties.length === getUniquePartiesFromData().length) {
-                 politikerListeOverskrift.textContent = `E-posten vil gå til representanter fra: Alle partier (hele bystyret)`;
+            if (partiesForListing.length === 0) {
+                 headerText = 'E-posten vil gå til: Alle partier (hele bystyret)';
+                 politikerListeTomMelding.textContent = 'Siden ingen spesifikke partier er valgt, vil e-posten bli adressert til alle representanter.';
+                 politikerListeTomMelding.classList.remove('hidden');
+                 partiesForListing = getUniquePartiesFromData().map(p => p.navn); // Use all for listing
+                 politikerListe.classList.add('hidden'); // Hide the list details for "All"
             } else {
-                 politikerListeOverskrift.textContent = `E-posten vil gå til representanter fra: ${partyNamesText}`;
+                politikerListe.classList.remove('hidden');
+                const partyNamesText = selectedParties.map(partyName => {
+                    const partyObj = politikerData.find(p => p.representerer === partyName);
+                    return partyObj ? `${partyObj.representerer} (${partyObj.forkortelse || 'Uavh.'})` : partyName;
+                }).join(', ');
+
+                if (selectAllPartiesCheckbox.checked && selectedParties.length === getUniquePartiesFromData().length) {
+                    headerText = `E-posten vil gå til representanter fra: Alle partier (hele bystyret)`;
+                } else {
+                    headerText = `E-posten vil gå til representanter fra: ${partyNamesText}`;
+                }
             }
 
+            politikerListeOverskrift.textContent = headerText;
 
             const filteredPoliticians = politikerData.filter(politiker => 
-                selectedParties.includes(politiker.representerer)
+                partiesForListing.includes(politiker.representerer)
             );
 
-            if (filteredPoliticians.length > 0) {
+            if (filteredPoliticians.length > 0 && selectedParties.length > 0) {
                 const partiesInSelection = getUniquePartiesFromData().filter(p => selectedParties.includes(p.navn));
 
                 partiesInSelection.forEach(party => {
@@ -756,10 +760,6 @@
                     details.appendChild(ul);
                     politikerListe.appendChild(details);
                 });
-
-
-            } else {
-                politikerListe.innerHTML = `<li class="text-slate-500 p-3 text-center">Ingen politikere funnet for de valgte partiene.</li>`;
             }
         }
 
@@ -834,8 +834,9 @@
             genererNyttUtkastKnapp.disabled = true;
             genererNyttUtkastKnapp.classList.add('opacity-75', 'cursor-not-allowed');
 
-            const selectedPartiesForEmail = getSelectedParties(); 
+            let selectedPartiesForEmail = getSelectedParties(); 
             let selectedPartyNameForSalutation = null;
+            // If no parties are selected, we intend to send to all, so we use a general salutation.
             if (selectedPartiesForEmail.length === 1) {
                 selectedPartyNameForSalutation = selectedPartiesForEmail[0];
             }
@@ -848,7 +849,7 @@
             };
 
             try {
-                const response = await fetch('https://tight-forest-fd62.kafaenify.workers.dev/', { 
+                const response = await fetch('/api/generate-email', { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(dataForBackend)
