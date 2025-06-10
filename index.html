@@ -246,7 +246,7 @@
                     <span id="personligAarsakCharCounter" class="char-counter">0/2000</span>
                 </div>
             </div>
-             <div class="mb-8"> 
+             <div class="pt-4"> 
                  <button id="hovedKnapp" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-in-out text-lg flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                     Generer e-postforslag
                     <div id="aiLoaderHoved" class="loader"></div>
@@ -300,11 +300,11 @@
                 Om dette ikke fungerer optimalt (f.eks. ved mange mottakere), bruk "Kopier e-posttekst"-knappen. Lim så inn teksten og e-postadressene manuelt.
             </p>
             
-            <div id="politikerListeContainer" class="mt-6 pt-6 border-t border-slate-200"> 
+            <div id="politikerListeContainer" class="mt-6 pt-6 border-t border-slate-200"> {/* This is the PREVIEW list container */}
                 <h3 id="politikerListeOverskrift" class="text-lg font-semibold text-slate-700 mb-3"></h3>
                 <ul id="politikerListe" class="list-none pl-0 space-y-1">
                     </ul>
-                 <p id="politikerListeTomMelding" class="text-slate-500 p-3 text-center hidden">Velg ett eller flere partier over for å vise politikere i denne listen.</p>
+                 <p id="politikerListeTomMelding" class="text-slate-500 p-3 text-center hidden">Velg ett eller flere partier over for å se politikere i denne listen.</p>
             </div>
         </div>
     </div>
@@ -580,7 +580,7 @@
                 const summary = document.createElement('summary');
                 summary.className = 'flex justify-between items-center p-2 bg-slate-100 hover:bg-slate-200 rounded-md cursor-pointer';
                 summary.innerHTML = `
-                    <span class="font-medium text-slate-700">${party.navn} (${party.forkortelse || 'Uavh'})</span>
+                    <span class="font-medium text-slate-700">${party.navn} (${party.forkortelse || 'Uavh.'})</span>
                     <span class="arrow-icon transform transition-transform duration-200 ease-in-out">&#9654;</span>
                 `;
                 details.appendChild(summary);
@@ -689,10 +689,12 @@
             politikerListe.innerHTML = ''; 
             politikerListeTomMelding.classList.add('hidden');
 
+            // If nothing is selected, the action is to send to all. Reflect this in the preview.
             if (selectedParties.length === 0) {
-                politikerListeOverskrift.textContent = 'Ingen partier valgt for e-postutsendelse';
-                politikerListeTomMelding.textContent = 'Velg ett eller flere partier over for å se hvem e-posten vil gå til.';
+                politikerListeOverskrift.textContent = 'E-posten vil gå til: Alle partier (hele bystyret)';
+                politikerListeTomMelding.textContent = 'Siden ingen spesifikke partier er valgt, vil e-posten bli adressert til alle representanter.';
                 politikerListeTomMelding.classList.remove('hidden');
+                selectAllPartiesCheckbox.checked = false; 
                 return;
             }
             
@@ -793,17 +795,16 @@
                 return;
             }
 
-            const selectedParties = getSelectedParties();
-            if (selectedParties.length === 0) {
-                showModal("Vennligst velg minst ett parti du ønsker å sende e-post til.");
-                return;
+            let partiesForEmail = getSelectedParties();
+            if (partiesForEmail.length === 0) {
+                partiesForEmail = getUniquePartiesFromData().map(p => p.navn);
             }
 
             const subject = encodeURIComponent("Angående skolesammenslåing på Tiller (Tonstad skole)");
             const body = encodeURIComponent(epostTekstDisplay.textContent);
 
             const bccEmails = politikerData
-                .filter(p => selectedParties.includes(p.representerer) && p.epost)
+                .filter(p => partiesForEmail.includes(p.representerer) && p.epost)
                 .map(p => p.epost);
 
             if (bccEmails.length === 0) {
@@ -873,11 +874,12 @@
                     updatePolitikerListeEtterValg(); 
 
                     const allPoliticianListDetails = allePolitikereListeElement.querySelectorAll('details');
-                    const selectedPartiesForEmailLower = selectedPartiesForEmail.map(p => p.toLowerCase());
-
+                    const partiesToExpand = (selectedPartiesForEmail.length > 0) ? selectedPartiesForEmail : getUniquePartiesFromData().map(p => p.navn);
+                    const partiesToExpandLower = partiesToExpand.map(p => p.toLowerCase());
+                    
                     allPoliticianListDetails.forEach(detail => {
                         const summaryText = detail.querySelector('summary').textContent.toLowerCase();
-                        const partyIsSelected = selectedPartiesForEmailLower.some(selPartyName => summaryText.includes(selPartyName));
+                        const partyIsSelected = partiesToExpandLower.some(selPartyName => summaryText.includes(selPartyName));
                         if (partyIsSelected) {
                             detail.open = true;
                         } else {
