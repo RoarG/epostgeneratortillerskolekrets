@@ -70,15 +70,15 @@
             text-decoration: none;
             cursor: pointer;
         }
-        #politikerListe li, #allePolitikereListe ul li { /* Applied to both lists */
+        #politikerListe ul li {
             padding: 10px 8px;
             border-bottom: 1px solid #f3f4f6;
             transition: background-color 0.2s ease;
         }
-        #politikerListe li:hover, #allePolitikereListe ul li:hover {
+        #politikerListe ul li:hover {
             background-color: #f9fafb;
         }
-        #politikerListe li:last-child, #allePolitikereListe ul li:last-child {
+        #politikerListe ul li:last-child {
             border-bottom: none;
         }
         .clickable-link {
@@ -150,19 +150,19 @@
             font-size: 0.75rem; /* text-xs */
             color: #6b7280; /* text-gray-500 */
         }
-        #allePolitikereListe summary {
+        #politikerListe summary {
             padding: 8px;
             background-color: #f9fafb; /* gray-50 */
             border-bottom: 1px solid #e5e7eb; /* gray-200 */
             font-weight: 500;
         }
-        #allePolitikereListe details[open] summary {
+        #politikerListe details[open] summary {
             background-color: #eef2ff; /* indigo-50 */
             color: #4338ca; /* indigo-700 */
         }
-        #allePolitikereListe ul {
-            padding-left: 1rem; /* Add some indentation for politician names */
-            background-color: #ffffff; /* white */
+        #politikerListe ul {
+            padding-left: 1rem;
+            background-color: #ffffff;
         }
     </style>
 </head>
@@ -283,30 +283,21 @@
                 Om dette ikke fungerer optimalt (f.eks. ved mange mottakere), bruk "Kopier e-posttekst"-knappen. Lim så inn teksten og e-postadressene manuelt.
             </p>
             
-            <div id="politikerListeContainer" class="mt-6 pt-6 border-t border-slate-200"> {/* This is the PREVIEW list container */}
-                <h3 id="politikerListeOverskrift" class="text-lg font-semibold text-slate-700 mb-3"></h3>
-                <ul id="politikerListe" class="list-none pl-0 space-y-1">
-                    </ul>
-                 <p id="politikerListeTomMelding" class="text-slate-500 p-3 text-center hidden">Velg ett eller flere partier over for å se politikere i denne listen.</p>
+            <div id="politikerListeContainer" class="mt-6 pt-6 border-t border-slate-200"> 
+                <h3 class="text-xl font-semibold text-slate-700 mb-3" id="politikerListeOverskrift"></h3>
+                <div id="innsynsportalSeksjon" class="mb-4 text-sm text-slate-600">
+                    <p>
+                        Fullstendig kontaktinformasjon for bystyrets medlemmer finner du på Trondheim kommunes innsynsportal:
+                        <a href="https://trondheim.innsynsportal.no/sru?commission_id=5002" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-700 hover:underline font-medium">
+                            Innsynsportal - Trondheim Bystyre
+                        </a>.
+                    </p>
+                </div>
+                 <p id="politikerListeTomMelding" class="text-slate-500 p-3 text-center hidden"></p>
+                 <div id="politikerListe" class="list-none pl-0 space-y-1">
+                 </div>
             </div>
         </div>
-
-        <div id="allePolitikereContainer" class="mb-8 pt-6 border-t border-slate-200">
-            <h3 class="text-xl font-semibold text-slate-700 mb-3">Kontaktinformasjon til bystyret</h3>
-             <div id="innsynsportalSeksjon" class="mb-4 text-sm text-slate-600">
-                 <p>
-                     Fullstendig kontaktinformasjon for bystyrets medlemmer finner du på Trondheim kommunes innsynsportal:
-                     <a href="https://trondheim.innsynsportal.no/sru?commission_id=5002" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-700 hover:underline font-medium">
-                         Innsynsportal - Trondheim Bystyre
-                     </a>.
-                 </p>
-            </div>
-            <p class="text-xs text-slate-500 mb-3">Klikk på et parti for å se/skjule representanter. Når du klikker på en e-postadresse, åpnes en ny e-post til kun den mottakeren (hvis e-postforslag er generert).</p>
-            <div id="allePolitikereListe" class="list-none pl-0 space-y-1">
-                <!-- Expandable party lists will be inserted here -->
-            </div>
-        </div>
-
     </div>
 
     <div id="messageModal" class="modal">
@@ -342,8 +333,6 @@
         const aiStatus = document.getElementById('aiStatus');
         const messageModal = document.getElementById('messageModal');
         const modalMessageText = document.getElementById('modalMessageText');
-        
-        const allePolitikereListeElement = document.getElementById('allePolitikereListe'); 
         
         const politikerListeContainer = document.getElementById('politikerListeContainer'); 
         const politikerListeOverskrift = document.getElementById('politikerListeOverskrift');
@@ -697,7 +686,7 @@
                  politikerListeTomMelding.textContent = 'Siden ingen spesifikke partier er valgt, vil e-posten bli adressert til alle representanter.';
                  politikerListeTomMelding.classList.remove('hidden');
                  partiesForListing = getUniquePartiesFromData().map(p => p.navn); // Use all for listing
-                 politikerListe.classList.add('hidden'); // Hide the list details for "All"
+                 politikerListe.classList.add('hidden'); 
             } else {
                 politikerListe.classList.remove('hidden');
                 const partyNamesText = selectedParties.map(partyName => {
@@ -836,7 +825,6 @@
 
             let selectedPartiesForEmail = getSelectedParties(); 
             let selectedPartyNameForSalutation = null;
-            // If no parties are selected, we intend to send to all, so we use a general salutation.
             if (selectedPartiesForEmail.length === 1) {
                 selectedPartyNameForSalutation = selectedPartiesForEmail[0];
             }
@@ -925,7 +913,7 @@
         
         renderPartyCheckboxes();
         renderAllPoliticiansExpandable(); 
-        updatePolitikerListeEtterValg(); 
+        // updatePolitikerListeEtterValg(); // Removed initial call to keep preview list hidden
 
     </script>
 </body>
